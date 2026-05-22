@@ -1,6 +1,5 @@
 
-#include ../Makefile.inc
-include ../root/Makefile.inc
+include ../Makefile.inc
 
 OBJECTS_DIR = ./
 
