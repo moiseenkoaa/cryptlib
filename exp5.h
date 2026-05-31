@@ -80,10 +80,11 @@ public:
     //LongInt2 * m_R;
     LongInt2 * m_R2;
     LongInt2 * m_MulTable[255];
-    unsigned char m_Back;
 
     int m_TwoTab[256], m_OddTab[256];
     unsigned char m_MulIndex[256];
+
+    unsigned char m_Back;
 
     void MonMul(const LongInt2 &A, const LongInt2 &B, LongInt2 &Result, LongInt2 &WorkBuffer);
     void MonSqr(const LongInt2 &A, LongInt2 &Result, LongInt2 &WorkBuffer);
