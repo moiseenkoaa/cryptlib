@@ -108,6 +108,7 @@ extern "C"
 // Арифметика длинных целых беззнаковых чисел
 // Автор: Моисеенко А.А.
 // Version 1.5 // 28.05.2007
+// Version 1.6 // Move constructor, operator =, fix operator <<= -x; // 20.05.2026
 // Для всех платформ
 
 //---------------------------------------------------------------------------
@@ -171,7 +172,7 @@ public:
 
     struct StatCount
     {
-        int m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back;
+        int m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back, m_Move;
 
         StatCount() noexcept
         {
@@ -185,13 +186,13 @@ public:
 
         CMaaString Sprintf() noexcept
         {
-            return CMaaString::sFormat("m_Exp=%d, m_Mul=%d, m_Div=%d, m_Add=%d, m_Del=%d, m_Init=%d, m_Rest=%d, m_RestEx=%d, m_Copy=%d, m_Cmp=%d, m_Back=%d",
-                m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back);
+            return CMaaString::sFormat("m_Exp=%d, m_Mul=%d, m_Div=%d, m_Add=%d, m_Del=%d, m_Init=%d, m_Rest=%d, m_RestEx=%d, m_Copy=%d, m_Cmp=%d, m_Back=%d, m_Move=%d",
+                m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back, m_Move);
         }
     };
     struct StatTime
     {
-        _qword m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back;
+        _qword m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back, m_Move;
 
         StatTime() noexcept
         {
@@ -205,26 +206,25 @@ public:
 
         CMaaString Sprintf() noexcept
         {
-            return CMaaString::sFormat("m_Exp=%,D, m_Mul=%,D, m_Div=%,D, m_Add=%,D, m_Del=%,D, m_Init=%,D, m_Rest=%,D, m_RestEx=%,D, m_Copy=%,D, m_Cmp=%,D, m_Back=%,D",
-                m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back);
+            return CMaaString::sFormat("m_Exp=%,D, m_Mul=%,D, m_Div=%,D, m_Add=%,D, m_Del=%,D, m_Init=%,D, m_Rest=%,D, m_RestEx=%,D, m_Copy=%,D, m_Cmp=%,D, m_Back=%,D, m_Move=%,D",
+                m_Exp, m_Mul, m_Div, m_Add, m_Del, m_Init, m_Rest, m_RestEx, m_Copy, m_Cmp, m_Back, m_Move);
         }
     };
 
     static StatCount sStatCount;
     static StatTime sStatTime;
 
-    //#define LONG_INT2_INC_STAT(x) ++LongInt2::sStatCount.x; CMyProf ______MyProf(LongInt2::sStatTime.x)
+//#define LONG_INT2_INC_STAT(x) ++LongInt2::sStatCount.x; CMyProf ______MyProf(LongInt2::sStatTime.x)
 #define LONG_INT2_INC_STAT(x)
 
     void Swap(LongInt2 &That) noexcept
     {
-        unsigned char *p = m_Number; m_Number = That.m_Number; That.m_Number = p;
-        int x;
-        x = m_Size; m_Size = That.m_Size; That.m_Size = x;
-        x = m_Size2; m_Size2 = That.m_Size2; That.m_Size2 = x;
-        x = m_TotalSize; m_TotalSize = That.m_TotalSize; That.m_TotalSize = x;
+        CMaaSwap(m_Number, That.m_Number);
+        CMaaSwap(m_Size, That.m_Size);
+        CMaaSwap(m_Size2, That.m_Size2);
+        CMaaSwap(m_TotalSize, That.m_TotalSize);
 #ifdef CRYPTLIB_USE_ASM64
-        x = m_Size8; m_Size8 = That.m_Size8; That.m_Size8 = x;
+        CMaaSwap(m_Size8, That.m_Size8);
 #endif
     }
 
@@ -238,7 +238,8 @@ public:
     LongInt2(const void *Ptr, int Size);
 
     // Инициализация другим длинным числом
-    LongInt2(const LongInt2 & Copy);
+    LongInt2(const LongInt2& Copy);
+    LongInt2(LongInt2&& Copy) noexcept;
 
     ~LongInt2();
 
@@ -258,7 +259,8 @@ public:
     }
 
 
-    LongInt2 & operator = (const LongInt2 &Second);
+    LongInt2 & operator = (const LongInt2& That);
+    LongInt2 & operator = (LongInt2&& That) noexcept;
     LongInt2 & operator = (_dword x)
     {
         const unsigned char xx[4] = {(unsigned char)x, (unsigned char)(x >> 8), (unsigned char)(x >> 16), (unsigned char)(x >> 24)};
@@ -344,7 +346,7 @@ public:
     // Возможен (корректен) вызов: xxx.CalcRest( xxx, yyy );
     LongInt2 & CalcRest(const LongInt2 &Dividend, const LongInt2 &Divider);
 
-    LongInt2 & CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, LongInt2 ** pMulTable);
+    LongInt2 & CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, LongInt2 * const* pMulTable);
 
     // Определение реальной длины числа (без учета старших нулей)
     int GetRealSize() const noexcept;
@@ -423,19 +425,7 @@ private:
 //int CharToHex(char c) noexcept;
 inline int constexpr CharToHex(char c) noexcept
 {
-    if (c >= '0' && c <= '9')
-    {
-        return c - '0';
-    }
-    if (c >= 'a' && c <= 'f')
-    {
-        return c - 'a' + 10;
-    }
-    if (c >= 'A' && c <= 'F')
-    {
-        return c - 'A' + 10;
-    }
-    return -1;
+    return (c >= '0' && c <= '9') ? c - '0' : (c >= 'a' && c <= 'f') ? c - 'a' + 10 : (c >= 'A' && c <= 'F') ? c - 'A' + 10 : -1;
 }
 
 int Import(LongInt2 &p, const char * ptr) noexcept; // returns size of number in bytes or -1

@@ -63,6 +63,7 @@
 // Арифметика длинных целых беззнаковых чисел
 // Автор: Моисеенко А.А.
 // Version 1.5 // 28.05.2007
+// Version 1.6 // Move constructor, operator =, fix operator <<= -x; // 20.05.2026
 // Для всех платформ
 
 
@@ -112,15 +113,34 @@ LongInt2::LongInt2(const LongInt2 & Copy_)
     LoadFromMem(Copy_.m_Number, Copy_.GetSize());
 }
 //---------------------------------------------------------------------------
-LongInt2 & LongInt2::operator = (const LongInt2 &Second)
+LongInt2::LongInt2(LongInt2&& Copy) noexcept
+:   m_Number(nullptr),
+    m_Size(0),
+    m_Size2(0),
+    m_TotalSize(0)
+#ifdef CRYPTLIB_USE_ASM64
+    , m_Size8(0)
+#endif
+{
+    Swap(Copy);
+}
+//---------------------------------------------------------------------------
+LongInt2 & LongInt2::operator = (const LongInt2 &That)
 {
     LONG_INT2_INC_STAT(m_Copy);
-    const int Size = Second.GetRealSize();
+    const int Size = That.GetRealSize();
     if  (Size > m_Size)
     {
         Throw("LongInt2 & LongInt2::operator = (const LongInt2 &Second)");
     }
-    LoadFromMem(Second.m_Number, Size);
+    LoadFromMem(That.m_Number, Size);
+    return *this;
+}
+//---------------------------------------------------------------------------
+LongInt2 & LongInt2::operator = (LongInt2&& That) noexcept
+{
+    LONG_INT2_INC_STAT(m_Move);
+    Swap(That);
     return *this;
 }
 //---------------------------------------------------------------------------
@@ -191,10 +211,10 @@ void LongInt2::Init(int Size)
     LONG_INT2_INC_STAT(m_Init);
     m_Number = nullptr;
     m_Size = Size;
-    if  (sizeof(_word) != 2)
-    {
-        Throw("sizeof(_word) != 2");
-    }
+    //if  (sizeof(_word) != 2) // check is in gCMaaToolLib_crt_Initializer()
+    //{
+    //    Throw("sizeof(_word) != 2");
+    //}
 #ifdef CRYPTLIB_USE_ASM64
     m_Size8 = (m_Size + sizeof(_qword) - 1) / sizeof(_qword);
     m_Size2 = m_Size8 * 4;
@@ -310,7 +330,7 @@ LongInt2 & LongInt2::operator += (const LongInt2 &Second)
 #endif // USE_ASM
 
 #endif
-    if  (v || lGet(m_Size) != 0)
+    if  (v || lGet(m_Size) /*!= 0*/)
     {
         memset(m_Number + m_Size, 0, m_TotalSize - m_Size); // restoring
         Throw("Overflow in LongInt2 & LongInt2::operator += (const LongInt2 &Second)"); // overflow
@@ -561,7 +581,7 @@ LongInt2 & LongInt2::CalcRest(const LongInt2 & Dividend, const LongInt2 & Divide
     return *this;
 }
 //---------------------------------------------------------------------------
-LongInt2 & LongInt2::CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, LongInt2 ** pMulTable)
+LongInt2 & LongInt2::CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, LongInt2 * const* pMulTable)
 {
     LONG_INT2_INC_STAT(m_RestEx);
     const int  DividendSize = Dividend.GetSize();
@@ -1144,11 +1164,11 @@ LongInt2 & LongInt2::operator >>= (int x)
 {
     if  (x < 0)
     {
-        *this <<= -x;
+        return (*this <<= -x);
     }
-    if  (x >= 8)
+    if (x >= 8)
     {
-        if  (x >= GetSize() * 8)
+        if (x >= GetSize() * 8)
         {
             Zero();
             x = 0;
@@ -1159,7 +1179,7 @@ LongInt2 & LongInt2::operator >>= (int x)
             x &= 7;
         }
     }
-    if  (x > 0)
+    if (x > 0)
     {
         _dword a1 = 0;
         for (int i = (GetSize() - 1) & ~1; i >= 0; i -= 2)
@@ -1175,19 +1195,19 @@ LongInt2 & LongInt2::operator <<= (int x)
 {
     if  (x < 0)
     {
-        *this >>= -x;
+        return (*this >>= -x);
     }
     const int Size = GetSize();
-    if  (x >= 8)
+    if (x >= 8)
     {
         for (int i = Size - x / 8 >= 0 ? Size - x / 8 : 0; i < Size; i += 2)
         {
-            if  (lGet(i) != 0)
+            if (lGet(i) != 0)
             {
                 Throw("Overflow (1) in LongInt2::operator <<= (int x)");
             }
         }
-        if  (x >= GetSize() * 8)
+        if (x >= GetSize() * 8)
         {
             Zero();
             x = 0;
@@ -1199,8 +1219,8 @@ LongInt2 & LongInt2::operator <<= (int x)
             //x &= 7;
         }
     }
-    int y = x & 7;
-    if  (y > 0)
+    const int y = x & 7;
+    if (y > 0)
     {
         _dword a1 = 0;
         for (int i = x / 8; i < Size; i += 2)

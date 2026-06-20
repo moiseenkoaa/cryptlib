@@ -206,10 +206,10 @@ void CMyExponent5::Init(const LongInt2 &P)
             *m_MulTable[i] = *m_MulTable[i - 1];
             *m_MulTable[i] += *m_P;
 
-            if  (i < 5)
-            {
+            //if  (i < 5)
+            //{
                 //pr("mult = ", *m_MulTable[i - 1]);
-            }
+            //}
             m_MulIndex[i] = (unsigned char)(((i * m_Back) & 0xff) - 1);
         }
         m_MulIndex[255] = (unsigned char)(((255 * m_Back) & 0xff) - 1);
@@ -334,7 +334,7 @@ void CMyExponent5::Reduce(LongInt2 &Result)
                 // сложить, чтобы обнулился младший байт, точнее определение
                 // такого K, что K*P + Result [] дает в младшем байте 0
                 const int a = Result[0];
-                if  (a != 0)
+                if  (a /*!= 0*/)
                 {
                     //a = ((a * m_Back) & 0xff) - 1;
                     //Result += *(m_MulTable[a]);
@@ -380,7 +380,7 @@ void CMyExponent5::Reduce(LongInt2 &Result)
             // сложить, чтобы обнулился младший байт, точнее определение
             // такого K, что K*P + Result [] дает в младшем байте 0
             const int a = Result[0];
-            if  (a != 0)
+            if  (a /*!= 0*/)
             {
                 //a = ((a * m_Back) & 0xff) - 1;
                 //Result += *(m_MulTable[a]);
