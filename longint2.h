@@ -346,7 +346,7 @@ public:
     // Возможен (корректен) вызов: xxx.CalcRest( xxx, yyy );
     LongInt2 & CalcRest(const LongInt2 &Dividend, const LongInt2 &Divider);
 
-    LongInt2 & CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, LongInt2 * const* pMulTable);
+    LongInt2 & CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, const LongInt2 * const* pMulTable);
 
     // Определение реальной длины числа (без учета старших нулей)
     int GetRealSize() const noexcept;

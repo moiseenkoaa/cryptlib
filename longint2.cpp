@@ -581,7 +581,7 @@ LongInt2 & LongInt2::CalcRest(const LongInt2 & Dividend, const LongInt2 & Divide
     return *this;
 }
 //---------------------------------------------------------------------------
-LongInt2 & LongInt2::CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, LongInt2 * const* pMulTable)
+LongInt2 & LongInt2::CalcRestEx(const LongInt2 & Dividend, const LongInt2 & Divider, const LongInt2 * const* pMulTable)
 {
     LONG_INT2_INC_STAT(m_RestEx);
     const int  DividendSize = Dividend.GetSize();
