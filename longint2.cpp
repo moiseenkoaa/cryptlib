@@ -107,13 +107,13 @@ LongInt2::LongInt2(int Size)
     Init(Size);
 }
 //---------------------------------------------------------------------------
-LongInt2::LongInt2(const LongInt2 & Copy_)
+LongInt2::LongInt2(const LongInt2 & That)
 {
-    Init(Copy_.GetSize());
-    LoadFromMem(Copy_.m_Number, Copy_.GetSize());
+    Init(That.GetSize());
+    LoadFromMem(That.m_Number, That.GetSize());
 }
 //---------------------------------------------------------------------------
-LongInt2::LongInt2(LongInt2&& Copy) noexcept
+LongInt2::LongInt2(LongInt2&& That) noexcept
 :   m_Number(nullptr),
     m_Size(0),
     m_Size2(0),
@@ -122,7 +122,7 @@ LongInt2::LongInt2(LongInt2&& Copy) noexcept
     , m_Size8(0)
 #endif
 {
-    Swap(Copy);
+    Swap(That);
 }
 //---------------------------------------------------------------------------
 LongInt2 & LongInt2::operator = (const LongInt2 &That)
@@ -131,7 +131,7 @@ LongInt2 & LongInt2::operator = (const LongInt2 &That)
     const int Size = That.GetRealSize();
     if  (Size > m_Size)
     {
-        Throw("LongInt2 & LongInt2::operator = (const LongInt2 &Second)");
+        Throw("LongInt2 & LongInt2::operator = (const LongInt2 &That)");
     }
     LoadFromMem(That.m_Number, Size);
     return *this;
