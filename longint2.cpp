@@ -211,10 +211,7 @@ void LongInt2::Init(int Size)
     LONG_INT2_INC_STAT(m_Init);
     m_Number = nullptr;
     m_Size = Size;
-    //if  (sizeof(_word) != 2) // check is in gCMaaToolLib_crt_Initializer()
-    //{
-    //    Throw("sizeof(_word) != 2");
-    //}
+    static_assert(sizeof(_word) == 2, "LongInt2 : sizeof(_word) == 2 check failed !");
 #ifdef CRYPTLIB_USE_ASM64
     m_Size8 = (m_Size + sizeof(_qword) - 1) / sizeof(_qword);
     m_Size2 = m_Size8 * 4;
